@@ -772,6 +772,8 @@ label_order = ['L_Ae' if i == 'LAGOON_AER' else 'L_Un' if i =='LAGOON_UNCATEGORI
 
 updated_label_order = [crosswalk[i] for i in data_to_plot.index]
 
+per_m3_result = data_to_plot.copy()
+
 fig, ax = plt.subplots(figsize=(5.7, 30))
 
 plt.rcParams['axes.linewidth'] = 1.5
@@ -1273,6 +1275,8 @@ data_to_plot = annual_plot.copy()
 
 data_to_plot = data_to_plot.loc[data_order]
 
+annual_result = data_to_plot.copy()
+
 fig, ax = plt.subplots(figsize=(5.7, 30))
 
 plt.rcParams['axes.linewidth'] = 1.5
@@ -1741,3 +1745,89 @@ ax.set_xlabel('$\mathbf{Emissions\ magnitude}$\n[MMT ${CO_2}$ eq·${year^{-1}}$]
               linespacing=0.8)
 
 mathtext.FontConstantsBase.sup1 = 0.35
+
+#%% output for Sahar's code
+
+TT_num_output = TT_num.copy()
+
+TT_flow_output = TT_flow.copy()
+
+energy_output = energy_plot[['electricity_kWh_MG','electricity_chem_kWh_MG',
+                             'electricity_other_kWh_MG','natural_gas_MJ_MG',
+                             'natural_gas_chem_MJ_MG','natural_gas_other_MJ_MG']]/MG_2_m3
+
+energy_output.rename(columns={'electricity_kWh_MG':'electricity_total_vol',
+                              'electricity_chem_kWh_MG':'electricity_chem_vol',
+                              'electricity_other_kWh_MG':'electricity_other_vol',
+                              'natural_gas_MJ_MG':'gas_total_vol',
+                              'natural_gas_chem_MJ_MG':'gas_chem_vol',
+                              'natural_gas_other_MJ_MG':'gas_other_vol'},
+                     inplace=True)
+
+per_m3_output = per_m3_result[['CH4','N2O','NC_CO2','NG_onsite','NG_upstream',
+                               'elec_average','elec_std','elec_weighted_average',
+                               'elec_weighted_std','biosolids_CH4','biosolids_N2O']]/MG_2_m3
+
+per_m3_output['total_emissions_national_ave_vol'] = per_m3_output[['CH4','N2O','NC_CO2','NG_onsite','NG_upstream',
+                                                                   'elec_average','biosolids_CH4','biosolids_N2O']].sum()
+
+per_m3_output['total_emissions_loc_vol'] = per_m3_output[['CH4','N2O','NC_CO2','NG_onsite','NG_upstream',
+                                                          'elec_weighted_average','biosolids_CH4','biosolids_N2O']].sum()
+
+per_m3_output.rename(columns={'CH4':'methane_vol',
+                              'N2O':'nitrous_oxide_vol',
+                              'NC_CO2':'noncombustion_co2_vol',
+                              'NG_onsite':'onsite_gas_vol',
+                              'NG_upstream':'upstream_gas_vol',
+                              'elec_average':'electricity_national_vol',
+                              'elec_std':'electricity_stdev_vol',
+                              'elec_weighted_average':'electricity_loc_vol',
+                              'elec_weighted_std':'electricity_loc_stdev_vol',
+                              'biosolids_CH4':'landfill_methane_vol',
+                              'biosolids_N2O':'land_applied_n2o_vol'},
+                     inplace=True)
+
+annual_output = annual_result.copy()
+
+annual_output['total_emissions_annual'] = annual_output.sum(axis=1)
+
+annual_output.rename(columns={'CH4':'methane_annual',
+                              'N2O':'nitrous_oxide_annual',
+                              'NC_CO2':'noncombustion_co2_annual',
+                              'NG_onsite':'onsite_gas_annual',
+                              'NG_upstream':'upstream_gas_annual',
+                              'electricity':'electricity_annual',
+                              'biosolids_CH4':'landfill_methane_annual',
+                              'biosolids_N2O':'land_applied_n2o_annual'},
+                     inplace=True)
+
+final_output = pd.concat([TT_num_output, TT_flow_output, energy_output, per_m3_output, annual_output], axis=1)
+
+final_output.rename(columns={0: 'TT_number',
+                             1: 'TT_flow_MGD'},
+                    inplace=True)
+
+final_output.reset_index(inplace=True)
+
+final_output['code'] = final_output['index'].apply(lambda x: crosswalk[x])
+
+final_output = final_output[['code','TT_number','TT_flow_MGD','electricity_total_vol',
+                             'electricity_chem_vol','electricity_other_vol','gas_total_vol',
+                             'gas_chem_vol','gas_other_vol','methane_vol','nitrous_oxide_vol',
+                             'noncombustion_co2_vol','onsite_gas_vol','upstream_gas_vol',
+                             'electricity_national_vol','electricity_stdev_vol',
+                             'electricity_loc_vol','electricity_loc_stdev_vol',
+                             'landfill_methane_vol','land_applied_n2o_vol',
+                             'total_emissions_national_ave_vol','total_emissions_loc_vol',
+                             'methane_annual','nitrous_oxide_annual','noncombustion_co2_annual',
+                             'onsite_gas_annual','upstream_gas_annual','landfill_methane_annual',
+                             'land_applied_n2o_annual','electricity_annual',
+                             'total_emissions_annual']]
+
+final_output.set_index('code', inplace=True)
+
+# this is the output for all TTs
+final_output
+
+# this is the output for all WWTPs
+WWTP_TT_results_output
